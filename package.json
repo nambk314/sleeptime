@@ -1,0 +1,15 @@
+{
+  "name": "alexa-sleep-time-skill",
+  "version": "1.0.0",
+  "private": true,
+  "dependencies": {
+    "alexa-sdk": "^1.0.25",
+    "ask-sdk": "^2.3.0",
+    "ask-sdk-core": "^2.3.0",
+    "ask-sdk-model": "^1.11.2",
+    "moment-timezone": "^0.5.23"
+  },
+  "devDependencies": {
+    "@types/node": "^10.12.18"
+  }
+}
