@@ -5,14 +5,34 @@
 const Alexa = require('ask-sdk');
 const Moment = require('moment-timezone');
 
+const apiAccessToken = this.event.context.System.apiAccessToken;
+const deviceId = this.event.context.System.device.deviceId;
+let countryCode = '';
+let postalCode = '';
+
+axios.get(`https://api.amazonalexa.com/v1/devices/${deviceId}/settings/address/countryAndPostalCode`, {
+  headers: { 'Authorization': `Bearer ${apiAccessToken}` }
+})
+.then((response) => {
+    countryCode = response.data.countryCode;
+    postalCode = response.data.postalCode;
+    const tz = ziptz.lookup( postalCode );
+    const currDate = new moment();
+    const userDatetime = currDate.tz(tz).format('YYYY-MM-DD HH:mm');
+    console.log('Local Timezone Date/Time::::::: ', userDatetime);
+})
+
 const LaunchRequestHandler = {
   canHandle(handlerInput) {
+    
     return handlerInput.requestEnvelope.request.type === 'LaunchRequest';
+    
   },
   handle(handlerInput) {
     const attributesManager = handlerInput.attributesManager;
-    const speechText = 'Welcome to Sleep Time Skill, what time do you want to wake up?';
-
+    //const speechText = 'Welcome to Sleep Time Skill, what time do you want to wake up?';
+    const speechText = 'device is: ' + handlerInput.requestEnvelope.context.System.device.supportedInterfaces;
+    //console.log('device is: ' + handlerInput.requestEnvelope.context.System.device.supportedInterfaces.geolocation);
     return handlerInput.responseBuilder
       .speak(speechText)
       .reprompt(speechText)
@@ -50,11 +70,11 @@ const WakeUpIntentHandler = {
 
     if (timeValue && timeValue.value) {
       timeStr = timeValue.value;
-      
+      var wakeTimeZero = minusTime(timeStr, 4.5);
       var wakeTimeOne = minusTime(timeStr, 6);
       var wakeTimeTwo = minusTime(timeStr, 7.5);
       var wakeTimeThree = minusTime(timeStr, 9);
-      speechText = 'You should sleep at: ' + wakeTimeThree + ", or " + wakeTimeTwo + ", or " + wakeTimeOne;
+      speechText = 'You should sleep at: ' + wakeTimeThree + ", " + wakeTimeTwo + ", " + wakeTimeOne + ", or " + wakeTimeZero +'. Remember to get in bed around 14 minutes before those time to acount for the average time your body needs to fall asleep.';
       console.log('new time is: ' + wakeTimeOne);
       console.log('new time is: ' + wakeTimeTwo);
       console.log('new time is: ' + wakeTimeThree);
@@ -92,33 +112,33 @@ function getCurrentTime(location) {
   return currentTime;
 }
 
-const SetTimeOfDayInterceptor = {
-  async process(handlerInput) {
+// const SetTimeOfDayInterceptor = {
+//   async process(handlerInput) {
 
-    const { requestEnvelope, serviceClientFactory, attributesManager } = handlerInput;
-    const sessionAttributes = attributesManager.getSessionAttributes();
+//     const { requestEnvelope, serviceClientFactory, attributesManager } = handlerInput;
+//     const sessionAttributes = attributesManager.getSessionAttributes();
 
-    // look up the time of day if we don't know it already.
-    if (realTime === "") {
-      const deviceId = requestEnvelope.context.System.device.deviceId;
-      console.log("DEvice ID: ", deviceId);
-      const upsServiceClient = serviceClientFactory.getUpsServiceClient();
-      const timezone = await upsServiceClient.getSystemTimeZone(deviceId);    
+//     // look up the time of day if we don't know it already.
+//     if (realTime === "") {
+//       const deviceId = requestEnvelope.context.System.device.deviceId;
+//       console.log("DEvice ID: ", deviceId);
+//       const upsServiceClient = serviceClientFactory.getUpsServiceClient();
+//       const timezone = await upsServiceClient.getSystemTimeZone(deviceId);    
 
-      const currentTime = getCurrentTime(timezone);
-      //const timeOfDay = getTimeOfDay(currentTime);
-      realTime = currentTime;
-      // sessionAttributes.timeOfDay = timeOfDay;
-      // sessionAttributes.profile.location.timezone = timezone;
-      // attributesManager.setSessionAttributes(sessionAttributes);
+//       const currentTime = getCurrentTime(timezone);
+//       //const timeOfDay = getTimeOfDay(currentTime);
+//       realTime = currentTime;
+//       // sessionAttributes.timeOfDay = timeOfDay;
+//       // sessionAttributes.profile.location.timezone = timezone;
+//       // attributesManager.setSessionAttributes(sessionAttributes);
       
-      console.log("SetTimeOfDayInterceptor - currentTime:", realTime);
-      //console.log("SetTimeOfDayInterceptor - timezone:", timezone);
-      //console.log('SetTimeOfDayInterceptor - time of day:', timeOfDay);
-      //console.log('SetTimeOfDayInterceptor - sessionAttributes', JSON.stringify(sessionAttributes));
-    }
-  }
-};
+//       console.log("SetTimeOfDayInterceptor - currentTime:", realTime);
+//       //console.log("SetTimeOfDayInterceptor - timezone:", timezone);
+//       //console.log('SetTimeOfDayInterceptor - time of day:', timeOfDay);
+//       //console.log('SetTimeOfDayInterceptor - sessionAttributes', JSON.stringify(sessionAttributes));
+//     }
+//   }
+// };
 
 //Calculate time take a time String in 24hour time format (16:00 is 4 p.m) and the additional hours in float.
 function addTime(time, timeAdded) {
@@ -191,6 +211,8 @@ function addTime(time, timeAdded) {
        answer = newHour + " " + newMin + " pm"; 
      } else if (newHour === 12) {
        answer = newHour + " " + newMin + " pm";
+     } else if (newHour === 0) {
+       answer = "12 " + newMin + " am";
      } else {
        answer = newHour + " " + newMin + " am"; 
      }
@@ -267,8 +289,8 @@ exports.handler = skillBuilder
     CancelAndStopIntentHandler,
     SessionEndedRequestHandler
   )
-  .addRequestInterceptors(
-    SetTimeOfDayInterceptor
-  )
+  // .addRequestInterceptors(
+  //   SetTimeOfDayInterceptor
+  // )
   .addErrorHandlers(ErrorHandler)
   .lambda();
