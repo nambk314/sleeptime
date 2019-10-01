@@ -4,23 +4,25 @@
 
 const Alexa = require('ask-sdk');
 const Moment = require('moment-timezone');
+const persistenceAdapter = require('ask-sdk-s3-persistence-adapter');
+const Core = require('ask-sdk-core');
 
-const apiAccessToken = this.event.context.System.apiAccessToken;
-const deviceId = this.event.context.System.device.deviceId;
+//const apiAccessToken = this.event.context.System.apiAccessToken;
+//const deviceId = this.event.context.System.device.deviceId;
 let countryCode = '';
 let postalCode = '';
 
-axios.get(`https://api.amazonalexa.com/v1/devices/${deviceId}/settings/address/countryAndPostalCode`, {
-  headers: { 'Authorization': `Bearer ${apiAccessToken}` }
-})
-.then((response) => {
-    countryCode = response.data.countryCode;
-    postalCode = response.data.postalCode;
-    const tz = ziptz.lookup( postalCode );
-    const currDate = new moment();
-    const userDatetime = currDate.tz(tz).format('YYYY-MM-DD HH:mm');
-    console.log('Local Timezone Date/Time::::::: ', userDatetime);
-})
+// axios.get(`https://api.amazonalexa.com/v1/devices/${deviceId}/settings/address/countryAndPostalCode`, {
+//   headers: { 'Authorization': `Bearer ${apiAccessToken}` }
+// })
+// .then((response) => {
+//     countryCode = response.data.countryCode;
+//     postalCode = response.data.postalCode;
+//     const tz = ziptz.lookup( postalCode );
+//     const currDate = new moment();
+//     const userDatetime = currDate.tz(tz).format('YYYY-MM-DD HH:mm');
+//     console.log('Local Timezone Date/Time::::::: ', userDatetime);
+// })
 
 const LaunchRequestHandler = {
   canHandle(handlerInput) {
@@ -30,8 +32,8 @@ const LaunchRequestHandler = {
   },
   handle(handlerInput) {
     const attributesManager = handlerInput.attributesManager;
-    //const speechText = 'Welcome to Sleep Time Skill, what time do you want to wake up?';
-    const speechText = 'device is: ' + handlerInput.requestEnvelope.context.System.device.supportedInterfaces;
+    const speechText = 'Welcome to Sleep Time Skill, what time do you want to wake up?';
+    //const speechText = 'device is: ' + handlerInput.requestEnvelope.context.System.device.supportedInterfaces;
     //console.log('device is: ' + handlerInput.requestEnvelope.context.System.device.supportedInterfaces.geolocation);
     return handlerInput.responseBuilder
       .speak(speechText)
@@ -280,17 +282,20 @@ const ErrorHandler = {
 
 const skillBuilder = Alexa.SkillBuilders.custom();
 
-exports.handler = skillBuilder
-  .addRequestHandlers(
-    LaunchRequestHandler,
-    HelloWorldIntentHandler,
-    HelpIntentHandler,
-    WakeUpIntentHandler,
-    CancelAndStopIntentHandler,
-    SessionEndedRequestHandler
-  )
-  // .addRequestInterceptors(
-  //   SetTimeOfDayInterceptor
-  // )
-  .addErrorHandlers(ErrorHandler)
-  .lambda();
+exports.handler = Alexa.SkillBuilders.custom()
+    .withPersistenceAdapter(
+        new persistenceAdapter.S3PersistenceAdapter({bucketName:process.env.S3_PERSISTENCE_BUCKET})
+    )
+    .addRequestHandlers(
+        LaunchRequestHandler,
+        HelloWorldIntentHandler,
+        WakeUpIntentHandler,
+        HelpIntentHandler,
+        CancelAndStopIntentHandler,
+        SessionEndedRequestHandler)
+        //IntentReflectorHandler) // make sure IntentReflectorHandler is last so it doesn't override your custom intent handlers
+    .addErrorHandlers(ErrorHandler)
+    .withApiClient(new Alexa.DefaultApiClient())
+    .lambda(); 
+
+
