@@ -89,6 +89,30 @@ const WakeUpIntentHandler = {
   },
 };
 
+const WakeUpIntentHandlerTwo = {
+  canHandle(handlerInput) {
+    return handlerInput.requestEnvelope.request.type === 'IntentRequest'
+      && handlerInput.requestEnvelope.request.intent.name === 'wakeUpIntentTwo';
+  }
+  async handle(handlerInput) {
+    const serviceClientFactory = handlerInput.serviceClientFactory;
+    const deviceId = handlerInput.requestEnvelope.context.System.device.deviceId;
+      
+    let userTimeZone;
+    try {
+        const upsServiceClient = serviceClientFactory.getUpsServiceClient();
+        userTimeZone = await upsServiceClient.getSystemTimeZone(deviceId);    
+    } catch (error) {
+        if (error.name !== 'ServiceError') {
+            return handlerInput.responseBuilder.speak("There was a problem connecting to the service.").getResponse();
+        }
+        console.log('error', error.message);
+    }
+    console.log('userTimeZone', userTimeZone);
+}
+};
+
+
 //This might be helpful to get the time. 
 //We need to get the location => Either zipcode or through timezone
 
