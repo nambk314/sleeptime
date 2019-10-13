@@ -71,15 +71,13 @@ const WakeUpIntentHandler = {
 
 
     if (timeValue && timeValue.value) {
-      timeStr = timeValue.value;
-      var wakeTimeZero = minusTime(timeStr, 4.5);
-      var wakeTimeOne = minusTime(timeStr, 6);
-      var wakeTimeTwo = minusTime(timeStr, 7.5);
-      var wakeTimeThree = minusTime(timeStr, 9);
-      speechText = 'You should sleep at: ' + wakeTimeThree + ", " + wakeTimeTwo + ", " + wakeTimeOne + ", or " + wakeTimeZero +'. Remember to get in bed around 14 minutes before those time to acount for the average time your body needs to fall asleep.';
-      console.log('new time is: ' + wakeTimeOne);
-      console.log('new time is: ' + wakeTimeTwo);
-      console.log('new time is: ' + wakeTimeThree);
+      speechText = calculateTime(timeValue.value, "sleep")
+      // timeStr = timeValue.value;
+      // var wakeTimeZero = minusTime(timeStr, 4.5);
+      // var wakeTimeOne = minusTime(timeStr, 6);
+      // var wakeTimeTwo = minusTime(timeStr, 7.5);
+      // var wakeTimeThree = minusTime(timeStr, 9);
+      // speechText = 'You should sleep at: ' + wakeTimeThree + ", " + wakeTimeTwo + ", " + wakeTimeOne + ", or " + wakeTimeZero +'. Remember to get in bed around 14 minutes before those time to acount for the average time your body needs to fall asleep.';
       
     }
     return handlerInput.responseBuilder
@@ -93,25 +91,59 @@ const WakeUpIntentHandlerTwo = {
   canHandle(handlerInput) {
     return handlerInput.requestEnvelope.request.type === 'IntentRequest'
       && handlerInput.requestEnvelope.request.intent.name === 'wakeUpIntentTwo';
-  }
+  },
   async handle(handlerInput) {
+    console.log('test', 'reach 1')
     const serviceClientFactory = handlerInput.serviceClientFactory;
     const deviceId = handlerInput.requestEnvelope.context.System.device.deviceId;
-      
+    var speechText = ""
     let userTimeZone;
     try {
         const upsServiceClient = serviceClientFactory.getUpsServiceClient();
-        userTimeZone = await upsServiceClient.getSystemTimeZone(deviceId);    
+        userTimeZone = await upsServiceClient.getSystemTimeZone(deviceId); 
+        // getting the current date with the time
+        var currentDateTime = new Date(new Date().toLocaleString("en-US", {timeZone: userTimeZone}));
+        //This function needed to be test but I think it will work
+        //We only want hour and minutes not seconds
+        var currentTime = currentDateTime.toTimeString().substring(0,5);
+        speechText = calculateTime(currentTime, "wakeUp")
+        //speechText = "timezone is: " + currentTime;
+          
     } catch (error) {
         if (error.name !== 'ServiceError') {
             return handlerInput.responseBuilder.speak("There was a problem connecting to the service.").getResponse();
         }
         console.log('error', error.message);
     }
-    console.log('userTimeZone', userTimeZone);
-}
+    console.log('test', 'reach 5')
+    return handlerInput.responseBuilder
+          .speak(speechText)
+          .withSimpleCard('Wake Up Two', speechText)
+          .getResponse(); 
+  },
 };
 
+//Calculate all the resonable time to sleep
+function calculateTime(timeStr, type) {
+    answer = ""
+    if (type === "sleep") {
+       var wakeTimeZero = minusTime(timeStr, 4.5);
+       var wakeTimeOne = minusTime(timeStr, 6);
+       var wakeTimeTwo = minusTime(timeStr, 7.5);
+       var wakeTimeThree = minusTime(timeStr, 9);
+       answer = 'You should sleep at: ' + wakeTimeThree + ", " + wakeTimeTwo + ", " + wakeTimeOne + ", or " + wakeTimeZero +'. Remember to get in bed around 14 minutes before those time to acount for the average time your body needs to fall asleep.';
+    } else if (type === "wakeUp") {
+       var wakeTimeZero = addTime(timeStr, 4.5);
+       var wakeTimeOne = addTime(timeStr, 6);
+       var wakeTimeTwo = addTime(timeStr, 7.5);
+       var wakeTimeThree = addTime(timeStr, 9);
+       answer = 'You should wake up at: ' +  wakeTimeZero  + ", " + wakeTimeOne  + ", " + wakeTimeTwo + ", or " + wakeTimeThree;
+    }
+   
+    return answer
+}
+
+//Calculate all the reasonable time to wake up
 
 //This might be helpful to get the time. 
 //We need to get the location => Either zipcode or through timezone
@@ -177,7 +209,7 @@ function addTime(time, timeAdded) {
      console.log("Hour is: " + curHour + " and minutes are: " + curMin);
      
      var newHour = parseInt(curHour, 10) + parseInt(timeAddedInt,10);
-     var newMin = parseInt(curMin, 10) + parseInt(leftOverTime*60,10);
+     var newMin = parseInt(curMin, 10) + parseInt(leftOverTime*60,10) + 14;
      console.log("New Hour is: " + newHour + " and new minutes are: " + newMin);
      
      if (newMin > 60) {
@@ -314,6 +346,7 @@ exports.handler = Alexa.SkillBuilders.custom()
         LaunchRequestHandler,
         HelloWorldIntentHandler,
         WakeUpIntentHandler,
+        WakeUpIntentHandlerTwo,
         HelpIntentHandler,
         CancelAndStopIntentHandler,
         SessionEndedRequestHandler)
