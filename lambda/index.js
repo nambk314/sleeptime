@@ -2,27 +2,14 @@
 /* eslint-disable  func-names */
 /* eslint-disable  no-console */
 
+//Created by Nam Bui on Nov 17th 2019
 const Alexa = require('ask-sdk');
 const Moment = require('moment-timezone');
 const persistenceAdapter = require('ask-sdk-s3-persistence-adapter');
 const Core = require('ask-sdk-core');
 
-//const apiAccessToken = this.event.context.System.apiAccessToken;
-//const deviceId = this.event.context.System.device.deviceId;
 let countryCode = '';
 let postalCode = '';
-
-// axios.get(`https://api.amazonalexa.com/v1/devices/${deviceId}/settings/address/countryAndPostalCode`, {
-//   headers: { 'Authorization': `Bearer ${apiAccessToken}` }
-// })
-// .then((response) => {
-//     countryCode = response.data.countryCode;
-//     postalCode = response.data.postalCode;
-//     const tz = ziptz.lookup( postalCode );
-//     const currDate = new moment();
-//     const userDatetime = currDate.tz(tz).format('YYYY-MM-DD HH:mm');
-//     console.log('Local Timezone Date/Time::::::: ', userDatetime);
-// })
 
 const LaunchRequestHandler = {
   canHandle(handlerInput) {
@@ -32,27 +19,10 @@ const LaunchRequestHandler = {
   },
   handle(handlerInput) {
     const attributesManager = handlerInput.attributesManager;
-    const speechText = 'Welcome to Sleep Time Skill, what time do you want to wake up?';
-    //const speechText = 'device is: ' + handlerInput.requestEnvelope.context.System.device.supportedInterfaces;
-    //console.log('device is: ' + handlerInput.requestEnvelope.context.System.device.supportedInterfaces.geolocation);
+    const speechText = 'Welcome to Sleep Time Skill, what time do you want to wake up? or you can say I want to sleep now';
     return handlerInput.responseBuilder
       .speak(speechText)
       .reprompt(speechText)
-      .withSimpleCard('Hello World', speechText)
-      .getResponse();
-  },
-};
-
-const HelloWorldIntentHandler = {
-  canHandle(handlerInput) {
-    return handlerInput.requestEnvelope.request.type === 'IntentRequest'
-      && handlerInput.requestEnvelope.request.intent.name === 'HelloWorldIntent';
-  },
-  handle(handlerInput) {
-    const speechText = 'Hello world';
-
-    return handlerInput.responseBuilder
-      .speak(speechText)
       .withSimpleCard('Hello World', speechText)
       .getResponse();
   },
@@ -67,22 +37,13 @@ const WakeUpIntentHandler = {
     var speechText = 'can you repeat the sleep time?';
     var timeValue = handlerInput.requestEnvelope.request.intent.slots.time;
     let timeStr;
-    console.log('this is the time value: ' + timeValue.value);
-
 
     if (timeValue && timeValue.value) {
       speechText = calculateTime(timeValue.value, "sleep")
-      // timeStr = timeValue.value;
-      // var wakeTimeZero = minusTime(timeStr, 4.5);
-      // var wakeTimeOne = minusTime(timeStr, 6);
-      // var wakeTimeTwo = minusTime(timeStr, 7.5);
-      // var wakeTimeThree = minusTime(timeStr, 9);
-      // speechText = 'You should sleep at: ' + wakeTimeThree + ", " + wakeTimeTwo + ", " + wakeTimeOne + ", or " + wakeTimeZero +'. Remember to get in bed around 14 minutes before those time to acount for the average time your body needs to fall asleep.';
-      
     }
     return handlerInput.responseBuilder
       .speak(speechText)
-      .withSimpleCard('Hello World', speechText)
+      .withSimpleCard('Wake Up', speechText)
       .getResponse();
   },
 };
@@ -103,19 +64,15 @@ const WakeUpIntentHandlerTwo = {
         userTimeZone = await upsServiceClient.getSystemTimeZone(deviceId); 
         // getting the current date with the time
         var currentDateTime = new Date(new Date().toLocaleString("en-US", {timeZone: userTimeZone}));
-        //This function needed to be test but I think it will work
         //We only want hour and minutes not seconds
         var currentTime = currentDateTime.toTimeString().substring(0,5);
         speechText = calculateTime(currentTime, "wakeUp")
-        //speechText = "timezone is: " + currentTime;
           
     } catch (error) {
         if (error.name !== 'ServiceError') {
             return handlerInput.responseBuilder.speak("There was a problem connecting to the service.").getResponse();
         }
-        console.log('error', error.message);
     }
-    console.log('test', 'reach 5')
     return handlerInput.responseBuilder
           .speak(speechText)
           .withSimpleCard('Wake Up Two', speechText)
@@ -131,7 +88,7 @@ function calculateTime(timeStr, type) {
        var wakeTimeOne = minusTime(timeStr, 6);
        var wakeTimeTwo = minusTime(timeStr, 7.5);
        var wakeTimeThree = minusTime(timeStr, 9);
-       answer = 'You should sleep at: ' + wakeTimeThree + ", " + wakeTimeTwo + ", " + wakeTimeOne + ", or " + wakeTimeZero +'. Remember to get in bed around 14 minutes before those time to acount for the average time your body needs to fall asleep.';
+       answer = 'You should sleep at: ' + wakeTimeThree + ", " + wakeTimeTwo + ", " + wakeTimeOne + ", or " + wakeTimeZero +'. Remember to get in bed around 14 minutes before those time, to account for the average time your body needs to fall asleep.';
     } else if (type === "wakeUp") {
        var wakeTimeZero = addTime(timeStr, 4.5);
        var wakeTimeOne = addTime(timeStr, 6);
@@ -143,60 +100,11 @@ function calculateTime(timeStr, type) {
     return answer
 }
 
-//Calculate all the reasonable time to wake up
-
-//This might be helpful to get the time. 
-//We need to get the location => Either zipcode or through timezone
-
-//https://github.com/alexa/skill-sample-nodejs-the-foodie/blob/master/lambda/custom/index.js
-//This might work but we somehow need requestEvelope.context.System.device
-
-// function getCurrentTime(location) {
-
-//   const deviceId = requestEnvelope.context.System.device.deviceId;
-
-//   const upsServiceClient = serviceClientFactory.getUpsServiceClient();
-//   const timezone = await upsServiceClient.getSystemTimeZone(deviceId);
-
-//   const currentTime = Moment.utc().tz(location);
-//   return currentTime;
-// }
-
-var realTime = "";
-
 function getCurrentTime(location) {
 
   const currentTime = Moment.utc().tz(location);
   return currentTime;
 }
-
-// const SetTimeOfDayInterceptor = {
-//   async process(handlerInput) {
-
-//     const { requestEnvelope, serviceClientFactory, attributesManager } = handlerInput;
-//     const sessionAttributes = attributesManager.getSessionAttributes();
-
-//     // look up the time of day if we don't know it already.
-//     if (realTime === "") {
-//       const deviceId = requestEnvelope.context.System.device.deviceId;
-//       console.log("DEvice ID: ", deviceId);
-//       const upsServiceClient = serviceClientFactory.getUpsServiceClient();
-//       const timezone = await upsServiceClient.getSystemTimeZone(deviceId);    
-
-//       const currentTime = getCurrentTime(timezone);
-//       //const timeOfDay = getTimeOfDay(currentTime);
-//       realTime = currentTime;
-//       // sessionAttributes.timeOfDay = timeOfDay;
-//       // sessionAttributes.profile.location.timezone = timezone;
-//       // attributesManager.setSessionAttributes(sessionAttributes);
-      
-//       console.log("SetTimeOfDayInterceptor - currentTime:", realTime);
-//       //console.log("SetTimeOfDayInterceptor - timezone:", timezone);
-//       //console.log('SetTimeOfDayInterceptor - time of day:', timeOfDay);
-//       //console.log('SetTimeOfDayInterceptor - sessionAttributes', JSON.stringify(sessionAttributes));
-//     }
-//   }
-// };
 
 //Calculate time take a time String in 24hour time format (16:00 is 4 p.m) and the additional hours in float.
 function addTime(time, timeAdded) {
@@ -274,7 +182,7 @@ function addTime(time, timeAdded) {
      } else {
        answer = newHour + " " + newMin + " am"; 
      }
-     
+   
     return answer;
      
   }
@@ -285,7 +193,7 @@ const HelpIntentHandler = {
       && handlerInput.requestEnvelope.request.intent.name === 'AMAZON.HelpIntent';
   },
   handle(handlerInput) {
-    const speechText = 'You can say hello to me!';
+    const speechText = 'You can say I want to sleep now, I want to sleep at or I want to wake up at.';
 
     return handlerInput.responseBuilder
       .speak(speechText)
@@ -328,10 +236,10 @@ const ErrorHandler = {
   },
   handle(handlerInput, error) {
     console.log(`Error handled: ${error.message}`);
-
+    var speechText = "Sorry, I can\'t understand the command. You can say I want to sleep now, I want to sleep at or I want to wake up at."
     return handlerInput.responseBuilder
-      .speak('Sorry, I can\'t understand the command. Please say again.')
-      .reprompt('Sorry, I can\'t understand the command. Please say again.')
+      .speak(speechText)
+      .reprompt(speechText)
       .getResponse();
   },
 };
@@ -344,13 +252,11 @@ exports.handler = Alexa.SkillBuilders.custom()
     )
     .addRequestHandlers(
         LaunchRequestHandler,
-        HelloWorldIntentHandler,
         WakeUpIntentHandler,
         WakeUpIntentHandlerTwo,
         HelpIntentHandler,
         CancelAndStopIntentHandler,
         SessionEndedRequestHandler)
-        //IntentReflectorHandler) // make sure IntentReflectorHandler is last so it doesn't override your custom intent handlers
     .addErrorHandlers(ErrorHandler)
     .withApiClient(new Alexa.DefaultApiClient())
     .lambda(); 
