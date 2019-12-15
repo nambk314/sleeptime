@@ -1,4 +1,3 @@
-
 /* eslint-disable  func-names */
 /* eslint-disable  no-console */
 
@@ -19,7 +18,7 @@ const LaunchRequestHandler = {
   },
   handle(handlerInput) {
     const attributesManager = handlerInput.attributesManager;
-    const speechText = 'Welcome to Sleep Time Skill, what time do you want to wake up? or you can say I want to sleep now';
+    const speechText = 'Welcome to Sleep Time Skill, what time do you want to wake up?';
     return handlerInput.responseBuilder
       .speak(speechText)
       .reprompt(speechText)
