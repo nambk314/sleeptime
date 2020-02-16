@@ -18,11 +18,11 @@ const LaunchRequestHandler = {
   },
   handle(handlerInput) {
     const attributesManager = handlerInput.attributesManager;
-    const speechText = 'Welcome to Sleep Time Skill, what time do you want to wake up?';
+    const speechText = 'Welcome to Sleep Time Skill, you can start by saying I want to wake up at, I want to sleep at or I am going to bed now';
     return handlerInput.responseBuilder
       .speak(speechText)
       .reprompt(speechText)
-      .withSimpleCard('Hello World', speechText)
+      .withSimpleCard('Welcom message', speechText)
       .getResponse();
   },
 };
@@ -37,12 +37,14 @@ const WakeUpIntentHandler = {
     var timeValue = handlerInput.requestEnvelope.request.intent.slots.time;
     let timeStr;
 
+    //Determine what time to sleep
+
     if (timeValue && timeValue.value) {
       speechText = calculateTime(timeValue.value, "sleep")
     }
     return handlerInput.responseBuilder
       .speak(speechText)
-      .withSimpleCard('Wake Up', speechText)
+      .withSimpleCard('Wake up time', speechText)
       .getResponse();
   },
 };
@@ -57,20 +59,22 @@ const sleepAtIntentHandler = {
     var timeValue = handlerInput.requestEnvelope.request.intent.slots.time;
     let timeStr;
 
+    //Determine what time to wake up
+
     if (timeValue && timeValue.value) {
-      speechText = calculateTime(timeValue.value, "sleep")
+      speechText = calculateTime(timeValue.value, "wakeUp")
     }
     return handlerInput.responseBuilder
       .speak(speechText)
-      .withSimpleCard('Wake Up', speechText)
+      .withSimpleCard('Sleep time', speechText)
       .getResponse();
   },
 };
 
-const WakeUpIntentHandlerTwo = {
+const sleepNowHandler = {
   canHandle(handlerInput) {
     return handlerInput.requestEnvelope.request.type === 'IntentRequest'
-      && handlerInput.requestEnvelope.request.intent.name === 'wakeUpIntentTwo';
+      && handlerInput.requestEnvelope.request.intent.name === 'sleepNowIntent';
   },
   async handle(handlerInput) {
     console.log('test', 'reach 1')
@@ -95,7 +99,7 @@ const WakeUpIntentHandlerTwo = {
     }
     return handlerInput.responseBuilder
           .speak(speechText)
-          .withSimpleCard('Wake Up Two', speechText)
+          .withSimpleCard('Wake up time', speechText)
           .getResponse(); 
   },
 };
@@ -213,7 +217,7 @@ const HelpIntentHandler = {
     return handlerInput.responseBuilder
       .speak(speechText)
       .reprompt(speechText)
-      .withSimpleCard('Hello World', speechText)
+      .withSimpleCard('Help intent', speechText)
       .getResponse();
   },
 };
@@ -229,7 +233,7 @@ const CancelAndStopIntentHandler = {
 
     return handlerInput.responseBuilder
       .speak(speechText)
-      .withSimpleCard('Hello World', speechText)
+      .withSimpleCard('Cancel intent', speechText)
       .getResponse();
   },
 };
@@ -268,7 +272,7 @@ exports.handler = Alexa.SkillBuilders.custom()
     .addRequestHandlers(
         LaunchRequestHandler,
         WakeUpIntentHandler,
-        WakeUpIntentHandlerTwo,
+        sleepNowHandler,
         sleepAtIntentHandler,
         HelpIntentHandler,
         CancelAndStopIntentHandler,
