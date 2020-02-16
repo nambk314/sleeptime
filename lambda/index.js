@@ -33,6 +33,26 @@ const WakeUpIntentHandler = {
       && handlerInput.requestEnvelope.request.intent.name === 'wakeUpIntent';
   },
   handle(handlerInput) {
+    var speechText = 'can you repeat the wake up time?';
+    var timeValue = handlerInput.requestEnvelope.request.intent.slots.time;
+    let timeStr;
+
+    if (timeValue && timeValue.value) {
+      speechText = calculateTime(timeValue.value, "sleep")
+    }
+    return handlerInput.responseBuilder
+      .speak(speechText)
+      .withSimpleCard('Wake Up', speechText)
+      .getResponse();
+  },
+};
+
+const sleepAtIntentHandler = {
+  canHandle(handlerInput) {
+    return handlerInput.requestEnvelope.request.type === 'IntentRequest'
+      && handlerInput.requestEnvelope.request.intent.name === 'sleepAtIntent';
+  },
+  handle(handlerInput) {
     var speechText = 'can you repeat the sleep time?';
     var timeValue = handlerInput.requestEnvelope.request.intent.slots.time;
     let timeStr;
@@ -59,6 +79,7 @@ const WakeUpIntentHandlerTwo = {
     var speechText = ""
     let userTimeZone;
     try {
+        //Getting the timezone 
         const upsServiceClient = serviceClientFactory.getUpsServiceClient();
         userTimeZone = await upsServiceClient.getSystemTimeZone(deviceId); 
         // getting the current date with the time
@@ -79,15 +100,16 @@ const WakeUpIntentHandlerTwo = {
   },
 };
 
-//Calculate all the resonable time to sleep
+//Calculate all the resonable time to sleep or wake up
 function calculateTime(timeStr, type) {
     answer = ""
+
     if (type === "sleep") {
-       var wakeTimeZero = minusTime(timeStr, 4.5);
-       var wakeTimeOne = minusTime(timeStr, 6);
-       var wakeTimeTwo = minusTime(timeStr, 7.5);
-       var wakeTimeThree = minusTime(timeStr, 9);
-       answer = 'You should sleep at: ' + wakeTimeThree + ", " + wakeTimeTwo + ", " + wakeTimeOne + ", or " + wakeTimeZero +'. Remember to get in bed around 14 minutes before those time, to account for the average time your body needs to fall asleep.';
+       var sleepTimeZero = minusTime(timeStr, 4.5);
+       var sleepTimeOne = minusTime(timeStr, 6);
+       var sleepTimeTwo = minusTime(timeStr, 7.5);
+       var sleepTimeThree = minusTime(timeStr, 9);
+       answer = 'You should sleep at: ' + sleepTimeThree + ", " + sleepTimeTwo + ", " + sleepTimeOne + ", or " + sleepTimeZero +'. Remember to get in bed around 14 minutes before those time, to account for the average time your body needs to fall asleep.';
     } else if (type === "wakeUp") {
        var wakeTimeZero = addTime(timeStr, 4.5);
        var wakeTimeOne = addTime(timeStr, 6);
@@ -110,15 +132,12 @@ function addTime(time, timeAdded) {
      var answer = "";
      var timeAddedInt = Math.floor(timeAdded);
      var leftOverTime = timeAdded - timeAddedInt;
-     console.log(" Added Hour is: " + timeAddedInt + " and added minutes are: " + leftOverTime);
      var curHour = time.substring(0,2);
      var curMin = time.substring(3,5);
-     console.log("Hour is: " + curHour + " and minutes are: " + curMin);
      
      var newHour = parseInt(curHour, 10) + parseInt(timeAddedInt,10);
      var newMin = parseInt(curMin, 10) + parseInt(leftOverTime*60,10) + 14;
-     console.log("New Hour is: " + newHour + " and new minutes are: " + newMin);
-     
+      
      if (newMin > 60) {
        newHour ++;
        newMin -= 60;
@@ -148,14 +167,11 @@ function addTime(time, timeAdded) {
      var answer = "";
      var timeAddedInt = Math.floor(timeAdded);
      var leftOverTime = timeAdded - timeAddedInt;
-     console.log(" Added Hour is: " + timeAddedInt + " and added minutes are: " + leftOverTime);
      var curHour = time.substring(0,2);
      var curMin = time.substring(3,5);
-     console.log("Hour is: " + curHour + " and minutes are: " + curMin);
      
      var newHour = parseInt(curHour, 10) - parseInt(timeAddedInt,10);
      var newMin = parseInt(curMin, 10) - parseInt(leftOverTime*60,10);
-     console.log("New Hour is: " + newHour + " and new minutes are: " + newMin);
      
      if (newMin < 0) {
        newHour--;
@@ -168,7 +184,7 @@ function addTime(time, timeAdded) {
        var divider = Math.floor(newHour/24);
        
        newHour = newHour - 24*divider;
-       console.log(newHour);
+       
      }
      
      if (newHour > 12) {
@@ -253,6 +269,7 @@ exports.handler = Alexa.SkillBuilders.custom()
         LaunchRequestHandler,
         WakeUpIntentHandler,
         WakeUpIntentHandlerTwo,
+        sleepAtIntentHandler,
         HelpIntentHandler,
         CancelAndStopIntentHandler,
         SessionEndedRequestHandler)
